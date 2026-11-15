@@ -11,6 +11,7 @@ export interface RenderCallbacks {
   onHover(t: TileRef | null): void;
   onTap(t: TileRef | null): void;
   onFps(fps: number): void;
+  onCameraInfo(info: string): void;
   /** Called every rendered frame with real elapsed seconds, before drawing. */
   onFrame(dt: number): void;
 }
@@ -32,6 +33,7 @@ export class GameRenderer {
   private elapsed = 0;
   private frames = 0;
   private fpsTime = 0;
+  private lastCameraInfo = '';
   private resizeObs!: ResizeObserver;
 
   constructor(
@@ -71,6 +73,9 @@ export class GameRenderer {
 
   rotate(dYaw: number) {
     this.controls.rotate(dYaw);
+  }
+  thirdPersonView() {
+    this.controls?.thirdPersonView();
   }
   zoom(f: number) {
     this.controls.zoom(f);
@@ -145,6 +150,11 @@ export class GameRenderer {
     const t = this.elapsed;
     this.cb.onFrame(dt);
     this.controls.update(dt);
+    const cameraInfo = this.controls.getDebugInfo();
+    if (cameraInfo !== this.lastCameraInfo) {
+      this.lastCameraInfo = cameraInfo;
+      this.cb.onCameraInfo(cameraInfo);
+    }
     this.enemyView.sync(this.world.enemies, this.camera, t, this.world.time);
     this.field.aimTowers(this.world.allTowers(), dt);
     this.effects.update(this.world, dt);

@@ -31,6 +31,7 @@ The base tower is Level 1. Its first upgrade is Level 2; Level 3 is available on
 | --- | --- |
 | Pan camera | Drag, WASD, or arrow keys |
 | Rotate camera | Right-drag or Q/E |
+| Third-person view preset | 3rd button beside the rotation controls |
 | Zoom | Mouse wheel or pinch |
 | Select a tower to build | 1–3 |
 | Cancel placement / selection | Escape |
@@ -38,6 +39,8 @@ The base tower is Level 1. Its first upgrade is Level 2; Level 3 is available on
 | Toggle enemy route display | P |
 | Start or pause | Space |
 | Send the next wave immediately | N |
+
+The third-person preset smoothly moves the camera to a centered, near-overhead angle. Panning, rotating, or zooming interrupts the move. The camera readout above the controls shows the position, target, yaw and pitch (in degrees), distance, field of view, and aspect ratio as you adjust the view.
 
 ## Development
 

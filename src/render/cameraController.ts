@@ -1,5 +1,10 @@
 import * as THREE from 'three/webgpu';
 
+const PRESET_YAW = THREE.MathUtils.degToRad(0.28);
+const PRESET_PITCH = THREE.MathUtils.degToRad(79.54);
+const PRESET_DISTANCE = 25.56;
+const PRESET_DURATION = 0.8;
+
 /** Orbit-style RTS camera: yaw/pitch/distance around a pan target on the ground plane. */
 export class CameraController {
   target = new THREE.Vector3();
@@ -18,6 +23,7 @@ export class CameraController {
   private dragMoved = 0;
   private keys = new Set<string>();
   private pinchPrev: { dist: number; angle: number; cx: number; cy: number } | null = null;
+  private transition: { target: THREE.Vector3; yaw: number; yawDelta: number; pitch: number; distance: number; elapsed: number } | null = null;
 
   /** Called for a click/tap that wasn't a drag. */
   onTap: (clientX: number, clientY: number) => void = () => {};
@@ -50,11 +56,25 @@ export class CameraController {
   }
 
   rotate(dYaw: number, dPitch = 0) {
+    this.transition = null;
     this.yaw += dYaw;
     this.pitch = THREE.MathUtils.clamp(this.pitch + dPitch, this.minPitch, this.maxPitch);
   }
 
+  thirdPersonView() {
+    const yawDelta = PRESET_YAW - this.yaw;
+    this.transition = {
+      target: this.target.clone(),
+      yaw: this.yaw,
+      yawDelta: Math.atan2(Math.sin(yawDelta), Math.cos(yawDelta)),
+      pitch: this.pitch,
+      distance: this.distance,
+      elapsed: 0,
+    };
+  }
+
   zoom(factor: number) {
+    this.transition = null;
     this.distance = THREE.MathUtils.clamp(this.distance * factor, this.minDistance, this.maxDistance);
   }
 
@@ -66,6 +86,7 @@ export class CameraController {
 
   /** Move target in camera-relative ground axes (right, forward). */
   private move2D(right: number, forward: number) {
+    this.transition = null;
     this.target.x += Math.cos(this.yaw) * right - Math.sin(this.yaw) * forward;
     this.target.z += -Math.sin(this.yaw) * right - Math.cos(this.yaw) * forward;
     this.clampTarget();
@@ -87,6 +108,21 @@ export class CameraController {
     if (dx || dz) this.move2D(dx * speed, dz * speed);
     if (this.keys.has('KeyQ')) this.rotate(-1.8 * dt);
     if (this.keys.has('KeyE')) this.rotate(1.8 * dt);
+    if (this.transition) {
+      const transition = this.transition;
+      transition.elapsed += dt;
+      const progress = Math.min(transition.elapsed / PRESET_DURATION, 1);
+      const eased = progress * progress * (3 - 2 * progress);
+      this.target.copy(transition.target).multiplyScalar(1 - eased);
+      this.yaw = transition.yaw + transition.yawDelta * eased;
+      this.pitch = THREE.MathUtils.lerp(transition.pitch, PRESET_PITCH, eased);
+      this.distance = THREE.MathUtils.lerp(transition.distance, PRESET_DISTANCE, eased);
+      if (progress === 1) {
+        this.target.set(0, 0, 0);
+        this.yaw = PRESET_YAW;
+        this.transition = null;
+      }
+    }
     this.apply();
   }
 
@@ -98,6 +134,16 @@ export class CameraController {
       target.z + Math.cos(yaw) * Math.cos(pitch) * distance,
     );
     this.camera.lookAt(target);
+  }
+
+  getDebugInfo() {
+    const formatVector = (v: THREE.Vector3) => `${v.x.toFixed(2)}, ${v.y.toFixed(2)}, ${v.z.toFixed(2)}`;
+    return [
+      `Position (x, y, z): ${formatVector(this.camera.position)}`,
+      `Target (x, y, z): ${formatVector(this.target)}`,
+      `Yaw: ${THREE.MathUtils.radToDeg(this.yaw).toFixed(2)}°  Pitch: ${THREE.MathUtils.radToDeg(this.pitch).toFixed(2)}°`,
+      `Distance: ${this.distance.toFixed(2)}  FOV: ${this.camera.fov.toFixed(2)}°  Aspect: ${this.camera.aspect.toFixed(2)}`,
+    ].join('\n');
   }
 
   private down = (e: PointerEvent) => {

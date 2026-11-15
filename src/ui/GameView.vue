@@ -13,6 +13,7 @@ import { WebGPUUnavailableError } from '../render/webgpu';
 
 const store = useGameStore();
 const canvas = ref<HTMLCanvasElement>();
+const cameraInfo = ref('');
 const map = MAPS[0];
 const world = new World(Grid.fromMap(map), STARTING_CREDITS);
 const loop = new GameLoop(world);
@@ -231,6 +232,7 @@ onMounted(async () => {
     onHover: (t) => (store.hovered = t ? grid.get(t.x, t.y)! : null),
     onTap,
     onFps: (fps) => (store.fps = fps),
+    onCameraInfo: (info) => (cameraInfo.value = info),
     onFrame,
   });
   try {
@@ -362,9 +364,14 @@ onBeforeUnmount(() => {
         </div>
       </nav>
 
+      <div v-if="cameraInfo" class="camera-info" aria-label="Camera debug information">
+        <strong>Camera</strong>
+        <pre>{{ cameraInfo }}</pre>
+      </div>
       <div class="controls">
         <button title="Rotate left (Q)" @click="game?.rotate(-Math.PI / 4)">⟲</button>
         <button title="Rotate right (E)" @click="game?.rotate(Math.PI / 4)">⟳</button>
+        <button class="view-preset" title="Third-person view" aria-label="Third-person view" @click="game?.thirdPersonView()">3rd</button>
         <button title="Zoom in" @click="game?.zoom(0.8)">＋</button>
         <button title="Zoom out" @click="game?.zoom(1.25)">－</button>
       </div>
@@ -647,7 +654,7 @@ body,
   flex-direction: column;
   width: 150px;
   max-width: calc(100% - 24px);
-  max-height: calc(100% - 266px);
+  max-height: calc(100% - 370px);
   box-sizing: border-box;
   padding: 8px;
   background: rgba(10, 20, 40, 0.9);
@@ -725,6 +732,23 @@ body,
   border-radius: 8px;
   pointer-events: none;
 }
+.camera-info {
+  position: absolute;
+  left: 12px;
+  bottom: 96px;
+  padding: 6px 8px;
+  color: #cfe6ff;
+  background: rgba(10, 20, 40, 0.9);
+  border: 1px solid #1f8fff55;
+  border-radius: 8px;
+  font-size: 11px;
+  user-select: text;
+}
+.camera-info pre {
+  margin: 4px 0 0;
+  font: inherit;
+  white-space: pre-wrap;
+}
 .controls {
   position: absolute;
   left: 12px;
@@ -744,6 +768,9 @@ body,
 }
 .controls button:hover {
   background: rgba(31, 143, 255, 0.3);
+}
+.controls .view-preset {
+  font-size: 14px;
 }
 .status {
   position: absolute;
