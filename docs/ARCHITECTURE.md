@@ -57,8 +57,8 @@ Set the repository's Pages source to **GitHub Actions** in Settings → Pages. P
 - UI: wave counter, countdown with "Send now" (N), clear toast, victory overlay.
 
 ## Milestone 6: tower upgrades
-- `data/towers.ts` defines two exclusive, two-level upgrade branches per tower. Siege favors splash, Railgun single-target armor penetration; Lance favors range and penetration, Overdrive beam damage; Storm adds chain coverage, Focused Arc strengthens fewer jumps. `getEffectiveTowerDef` combines base stats with the chosen levels.
-- `World.upgradeTower` validates the path, level, game state and credits before charging, and adds each upgrade cost to the tower's investment. Selling refunds the configured fraction of the full investment. A branch choice is permanent until the tower is sold.
+- `data/towers.ts` defines one two-level upgrade path per tower: Siege for Cannon, Lance for Laser, and Storm for Tesla. `getEffectiveTowerDef` combines base stats with the purchased levels.
+- `World.upgradeTower` validates the path, level, game state and credits before charging, and adds each upgrade cost to the tower's investment. Level 3 can only be purchased after Level 2. Selling refunds the configured fraction of the full investment.
 - Combat, selected range indicators and effects use effective stats. Upgraded towers use branch colors and one glowing ring per upgrade level.
 - Click a placed tower at any time to leave placement mode and show its stats, upgrade choices, prices, and sell value. Tower levels start at 1; filled and empty boxes show the current level including the base tower. Unaffordable upgrades are disabled.
 
