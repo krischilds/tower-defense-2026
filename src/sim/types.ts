@@ -12,7 +12,7 @@ export interface PlacedTower {
   branch: string | null;
   level: number;
   priority: TargetPriority;
-  /** Seconds until the next shot (projectile/chain towers). */
+  /** Seconds until the next shot (projectile/missile/chain towers). */
   cooldown: number;
   targetId: number | null;
   /** Facing in radians (atan2(dx, dy) in tile space). */
@@ -42,6 +42,7 @@ export interface Enemy {
 
 export interface Projectile {
   id: number;
+  kind: 'projectile' | 'missile';
   x: number;
   y: number;
   targetId: number;
@@ -49,6 +50,8 @@ export interface Projectile {
   tx: number;
   ty: number;
   speed: number;
+  acceleration: number;
+  maxSpeed: number;
   damage: number;
   splash: number;
   pierce: number;
@@ -60,4 +63,5 @@ export type GameEvent =
   | { type: 'shot'; x: number; y: number; color: number }
   | { type: 'hit'; x: number; y: number; color: number; big: boolean }
   | { type: 'death'; x: number; y: number; color: number }
+  | { type: 'missileTrail'; id: number; from: Point; to: Point }
   | { type: 'chain'; points: Point[]; color: number };

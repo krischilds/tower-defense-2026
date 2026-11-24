@@ -277,7 +277,7 @@ onBeforeUnmount(() => {
 
       <div class="time">
         <button class="play-toggle" :class="{ running: !store.paused }" title="Start / pause (Space)" @click="togglePause">{{ store.paused ? 'Start' : 'Pause' }}</button>
-        <button v-for="s in SPEED_OPTIONS" :key="s" :class="{ active: store.speed === s }" @click="setSpeed(s)">{{ s }}×</button>
+        <button v-for="s in SPEED_OPTIONS" :key="s" :class="{ active: store.speed === s }" :aria-pressed="store.speed === s" @click="setSpeed(s)">{{ s === 0.25 ? '¼' : s === 0.5 ? '½' : s }}×</button>
       </div>
 
       <div v-if="store.wavePhase === 'countdown' && !store.paused && !store.defeated && !store.victory" class="wavebar">
@@ -378,7 +378,7 @@ onBeforeUnmount(() => {
 
       <footer class="status">{{ store.backend }} · {{ store.fps }} FPS</footer>
       <div class="help">
-        Drag: pan · Right-drag / Q,E: rotate · Wheel / pinch: zoom · WASD: move · 1-3: tower · Esc: cancel · X: sell
+        Drag: pan · Right-drag / Q,E: rotate · Wheel / pinch: zoom · WASD: move · 1-4: tower · Esc: cancel · X: sell
       </div>
     </template>
   </div>
@@ -805,6 +805,15 @@ body,
   color: #7c93b5;
 }
 @media (max-width: 700px) {
+  .time {
+    bottom: 90px;
+    max-width: calc(100% - 24px);
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  .camera-info {
+    bottom: 190px;
+  }
   .panel {
     top: auto;
     bottom: 100px;
@@ -815,7 +824,7 @@ body,
     width: 120px;
   }
   .panel {
-    bottom: 170px;
+    bottom: 300px;
   }
   .help {
     display: none;

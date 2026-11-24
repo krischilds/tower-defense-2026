@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { Grid } from '../src/sim/grid';
 import { World } from '../src/sim/world';
-import { armorMultiplier, pickTarget } from '../src/sim/combat';
-import { getTowerDef } from '../src/data/towers';
+import { armorMultiplier, pickTarget, updateCombat } from '../src/sim/combat';
+import { getTowerDef, TOWERS } from '../src/data/towers';
 import { getEnemyDef } from '../src/data/enemies';
 
 const world = (rows: string[], credits = 1000) => {
@@ -124,6 +124,77 @@ describe('laser', () => {
     w.placeTower('laser', 5, 1);
     run(w, 0.5);
     expect(w.towerAt(5, 1)!.firing).toBe(false);
+  });
+});
+
+describe('missile', () => {
+  it('is the most expensive, highest damage, and slowest-firing tower', () => {
+    const missile = getTowerDef('missile');
+    for (const other of TOWERS.filter((tower) => tower.id !== missile.id)) {
+      expect(missile.cost).toBeGreaterThan(other.cost);
+      expect(missile.damage).toBeGreaterThan(other.damage);
+      if (other.fireRate > 0) expect(missile.fireRate).toBeLessThan(other.fireRate);
+    }
+
+    const w = world(LANE);
+    w.placeTower('missile', 5, 1);
+    const enemy = enemyAt(w, 'basic', 5, 0);
+    enemy.health = enemy.maxHealth = 10000;
+    updateCombat(w, 0);
+    updateCombat(w, 2.85);
+    expect(w.events.filter((event) => event.type === 'shot')).toHaveLength(1);
+    updateCombat(w, 0.01);
+    expect(w.events.filter((event) => event.type === 'shot')).toHaveLength(2);
+  });
+
+  it('accelerates from below cannon speed to twice cannon speed and emits its path', () => {
+    const w = world(LANE);
+    w.placeTower('missile', 5, 1);
+    enemyAt(w, 'basic', 9, 0);
+    updateCombat(w, 0);
+    const projectile = w.projectiles[0];
+    expect(projectile.kind).toBe('missile');
+    expect(projectile.speed).toBeLessThan(getTowerDef('cannon').projectileSpeed!);
+    projectile.tx = 100;
+    projectile.ty = 1;
+    w.enemies = [];
+    const startX = projectile.x;
+    updateCombat(w, 0.25);
+    expect(projectile.speed).toBeCloseTo(17);
+    expect(projectile.x - startX).toBeCloseTo(3);
+    updateCombat(w, 0.75);
+    expect(projectile.speed).toBeCloseTo(2 * getTowerDef('cannon').projectileSpeed!);
+    expect(projectile.x - startX).toBeCloseTo(18 - 121 / 80);
+    updateCombat(w, 0.5);
+    expect(projectile.speed).toBeCloseTo(18);
+    expect(w.events.filter((event) => event.type === 'missileTrail')).toHaveLength(3);
+
+    const ranged = world(LANE);
+    ranged.placeTower('missile', 5, 1);
+    enemyAt(ranged, 'basic', 9, 0);
+    updateCombat(ranged, 0.275);
+    expect(ranged.projectiles).toHaveLength(1);
+    expect(ranged.projectiles[0].speed).toBeCloseTo(2 * getTowerDef('cannon').projectileSpeed!);
+  });
+
+  it('explodes on impact and damages enemies within two tiles, including the boundary', () => {
+    const w = world(LANE);
+    w.placeTower('missile', 5, 1);
+    w.setPriority(5, 1, 'closest');
+    const enemies = [5, 6, 7, 7.01].map((x) => {
+      const enemy = enemyAt(w, 'basic', x, 0);
+      enemy.health = enemy.maxHealth = 1000;
+      return enemy;
+    });
+    updateCombat(w, 1);
+    expect(w.projectiles).toHaveLength(0);
+    expect(1000 - enemies[0].health).toBeCloseTo(60);
+    expect(1000 - enemies[1].health).toBeCloseTo(45);
+    expect(1000 - enemies[2].health).toBeCloseTo(30);
+    expect(enemies[3].health).toBe(1000);
+    const trail = w.events.find((event) => event.type === 'missileTrail');
+    expect(trail).toMatchObject({ to: { x: 5, y: 0 } });
+    expect(w.events.some((event) => event.type === 'hit' && event.big)).toBe(true);
   });
 });
 

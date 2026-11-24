@@ -89,6 +89,7 @@ export class GameRenderer {
     this.renderer.setAnimationLoop(null);
     this.resizeObs.disconnect();
     this.controls.dispose();
+    this.effects.dispose();
     this.renderer.dispose();
   }
 
@@ -157,7 +158,7 @@ export class GameRenderer {
     }
     this.enemyView.sync(this.world.enemies, this.camera, t, this.world.time);
     this.field.aimTowers(this.world.allTowers(), dt);
-    this.effects.update(this.world, dt);
+    this.effects.update(this.world, dt, this.camera);
     if (this.seenVersion !== this.world.version) {
       this.seenVersion = this.world.version;
       this.field.syncTowers(this.world.allTowers());

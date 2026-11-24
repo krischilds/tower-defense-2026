@@ -83,6 +83,16 @@ describe('tower upgrades', () => {
     expect(enemies.every((enemy) => enemy.health < enemy.maxHealth)).toBe(true);
   });
 
+  it('fires upgraded missiles with a two-tile blast radius', () => {
+    const w = makeWorld();
+    w.placeTower('missile', 5, 1);
+    expect(w.upgradeTower(5, 1, 'warhead').ok).toBe(true);
+    expect(w.upgradeTower(5, 1, 'warhead').ok).toBe(true);
+    w.spawnEnemy('tank', { x: 5, y: 0 });
+    w.update(1 / 60);
+    expect(w.projectiles[0]).toMatchObject({ kind: 'missile', damage: 100, splash: 2, pierce: 0.75 });
+  });
+
   it('resets upgraded towers and restores initial credits', () => {
     const w = makeWorld();
     w.placeTower('cannon', 5, 1);

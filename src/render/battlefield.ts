@@ -1,4 +1,5 @@
 import * as THREE from 'three/webgpu';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import type { Grid, TileType } from '../sim/grid';
 import type { Point } from '../sim/pathfinding';
 import type { PlacedTower } from '../sim/world';
@@ -27,6 +28,7 @@ export class Battlefield {
   private towerGroup = new THREE.Group();
   private pathGroup = new THREE.Group();
   private ghost = new THREE.Group();
+  private ghostKey = '';
   private heads = new Map<number, THREE.Object3D>();
   private rangeRing: THREE.Mesh;
   private hover: THREE.Mesh;
@@ -76,9 +78,22 @@ export class Battlefield {
       this.ghost.visible = false;
       return;
     }
-    this.ghost.clear();
-    const def = getTowerDef(defId);
-    this.ghost.add(this.makeTowerMesh(def.kind, valid ? def.color : 0xff3333, 0.45));
+    const key = `${defId}:${valid}`;
+    if (key !== this.ghostKey) {
+      const geometries = new Set<THREE.BufferGeometry>();
+      const materials = new Set<THREE.Material>();
+      this.ghost.traverse((child) => {
+        if (!(child instanceof THREE.Mesh)) return;
+        geometries.add(child.geometry);
+        for (const material of Array.isArray(child.material) ? child.material : [child.material]) materials.add(material);
+      });
+      geometries.forEach((geometry) => geometry.dispose());
+      materials.forEach((material) => material.dispose());
+      this.ghost.clear();
+      const def = getTowerDef(defId);
+      this.ghost.add(this.makeTowerMesh(def.kind, valid ? def.color : 0xff3333, 0.45));
+      this.ghostKey = key;
+    }
     this.ghost.position.copy(this.tileToWorld(t.x, t.y, TILE_H));
     this.ghost.visible = true;
   }
@@ -92,7 +107,7 @@ export class Battlefield {
       for (let level = 0; level < t.level; level++) {
         const ring = new THREE.Mesh(
           new THREE.TorusGeometry(0.3 + level * 0.05, 0.035, 6, 16),
-          new THREE.MeshStandardMaterial({ color: def.color, emissive: def.color, emissiveIntensity: 0.9 }),
+          new THREE.MeshStandardMaterial({ color: def.color, emissive: def.color, emissiveIntensity: 0.4, roughness: 0.5 }),
         );
         ring.rotation.x = Math.PI / 2;
         ring.position.y = 0.28 + level * 0.15;
@@ -159,33 +174,42 @@ export class Battlefield {
   private makeTowerMesh(kind: TowerKind, color: number, opacity: number) {
     const g = new THREE.Group();
     const transparent = opacity < 1;
-    const body = new THREE.MeshStandardMaterial({ color: 0x3a4666, metalness: 0.7, roughness: 0.35, transparent, opacity });
-    const glow = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.9, transparent, opacity });
-    const base = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.42, 0.25, 8), body);
+    const body = new THREE.MeshStandardMaterial({ color: 0x596573, metalness: 0.65, roughness: 0.5, transparent, opacity });
+    const glow = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.3, metalness: 0.25, roughness: 0.5, transparent, opacity });
+    const base = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.42, 0.25, 24), body);
     base.position.y = 0.125;
-    const core = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.26, 0.3, 8), glow);
+    const core = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.26, 0.3, 20), glow);
     core.position.y = 0.4;
     const head = new THREE.Group();
     head.position.y = 0.62;
-    head.add(new THREE.Mesh(new THREE.SphereGeometry(0.17, 12, 8), body));
+    head.add(new THREE.Mesh(new THREE.SphereGeometry(0.17, 20, 12), body));
     if (kind === 'projectile') {
-      const barrel = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.55), glow);
+      const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.085, 0.55, 16), body);
+      barrel.rotation.x = Math.PI / 2;
       barrel.position.z = 0.28;
-      const brake = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.08), body);
+      const brake = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.08, 16), glow);
+      brake.rotation.x = Math.PI / 2;
       brake.position.z = 0.55;
       head.add(barrel, brake);
+    } else if (kind === 'missile') {
+      const launcher = new THREE.Mesh(new RoundedBoxGeometry(0.42, 0.3, 0.55, 3, 0.06), body);
+      launcher.position.z = 0.2;
+      const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.5, 16), glow);
+      tube.rotation.x = Math.PI / 2;
+      tube.position.z = 0.3;
+      head.add(launcher, tube);
     } else if (kind === 'beam') {
-      const emitter = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.08, 0.5, 8), glow);
+      const emitter = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.08, 0.5, 16), body);
       emitter.rotation.x = Math.PI / 2;
       emitter.position.z = 0.3;
-      const lens = new THREE.Mesh(new THREE.SphereGeometry(0.09, 10, 8), glow);
+      const lens = new THREE.Mesh(new THREE.SphereGeometry(0.09, 16, 12), glow);
       lens.position.z = 0.56;
       head.add(emitter, lens);
     } else {
-      const coil = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.04, 6, 14), glow);
+      const coil = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.04, 12, 24), glow);
       coil.rotation.x = Math.PI / 2;
       coil.position.y = 0.2;
-      const spike = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.4, 6), glow);
+      const spike = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.4, 16), body);
       spike.position.y = 0.42;
       head.add(coil, spike);
     }

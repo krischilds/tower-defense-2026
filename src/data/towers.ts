@@ -1,4 +1,4 @@
-export type TowerKind = 'projectile' | 'beam' | 'chain';
+export type TowerKind = 'projectile' | 'missile' | 'beam' | 'chain';
 
 export interface TowerDef {
   id: string;
@@ -9,7 +9,7 @@ export interface TowerDef {
   sellRatio: number;
   color: number;
   kind: TowerKind;
-  /** Damage per hit (projectile/chain) or per second (beam). */
+  /** Damage per hit (projectile/missile/chain) or per second (beam). */
   damage: number;
   /** Shots per second (ignored by beams). */
   fireRate: number;
@@ -17,8 +17,10 @@ export interface TowerDef {
   range: number;
   /** Fraction of enemy armor ignored (0..1). */
   armorPierce: number;
-  /** Projectile only. */
+  /** Projectile and missile only. */
   projectileSpeed?: number;
+  projectileAcceleration?: number;
+  projectileMaxSpeed?: number;
   splash?: number;
   /** Chain only. */
   chainCount?: number;
@@ -42,6 +44,12 @@ export const TOWERS: TowerDef[] = [
     id: 'tesla', name: 'Tesla', description: 'Lightning that jumps between nearby enemies.',
     cost: 100, sellRatio: 0.7, color: 0x6ad8ff, kind: 'chain',
     damage: 10, fireRate: 1.5, range: 2.8, armorPierce: 0, chainCount: 4, chainRange: 1.8, chainFalloff: 0.8,
+  },
+  {
+    id: 'missile', name: 'Missile', description: 'Slow-firing missiles accelerate and explode in a 2-tile radius.',
+    cost: 150, sellRatio: 0.7, color: 0xffd34d, kind: 'missile',
+    damage: 60, fireRate: 0.35, range: 4.5, armorPierce: 0.5,
+    projectileSpeed: 7, projectileAcceleration: 40, projectileMaxSpeed: 18, splash: 2,
   },
 ];
 
@@ -85,6 +93,12 @@ export const TOWER_UPGRADES: Record<string, UpgradeBranch[]> = {
     { id: 'storm', name: 'Storm', color: 0xa999ff, levels: [
       { cost: 75, description: 'Chains to more enemies over longer distances.', stats: { chainCount: 6, chainRange: 2.3 } },
       { cost: 130, description: 'More jumps with reduced damage falloff.', stats: { chainCount: 8, chainFalloff: 0.9 } },
+    ] },
+  ],
+  missile: [
+    { id: 'warhead', name: 'Warhead', color: 0xff844d, levels: [
+      { cost: 110, description: 'Stronger warheads and longer range.', stats: { damage: 75, range: 5 } },
+      { cost: 180, description: 'More devastating warheads with improved armor penetration.', stats: { damage: 100, armorPierce: 0.75 } },
     ] },
   ],
 };

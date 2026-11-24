@@ -94,10 +94,18 @@ function moveProjectiles(world: World, dt: number, byId: Map<number, Enemy>) {
       p.ty = target.y;
     }
     const d = dist(p.x, p.y, p.tx, p.ty);
-    const step = p.speed * dt;
+    const accelerationTime = p.acceleration > 0 ? Math.min(dt, Math.max(0, (p.maxSpeed - p.speed) / p.acceleration)) : 0;
+    const step = p.speed * dt + p.acceleration * accelerationTime * (dt - accelerationTime / 2);
+    p.speed = Math.min(p.maxSpeed, p.speed + p.acceleration * dt);
+    const travel = d > 0.05 ? Math.min(step, d) : d;
+    const x = d > 0 ? p.x + ((p.tx - p.x) / d) * travel : p.tx;
+    const y = d > 0 ? p.y + ((p.ty - p.y) / d) * travel : p.ty;
+    if (p.kind === 'missile' && travel > 0) {
+      push(world, { type: 'missileTrail', id: p.id, from: { x: p.x, y: p.y }, to: { x, y } });
+    }
     if (d > step && d > 0.05) {
-      p.x += ((p.tx - p.x) / d) * step;
-      p.y += ((p.ty - p.y) / d) * step;
+      p.x = x;
+      p.y = y;
       keep.push(p);
       continue;
     }
@@ -141,15 +149,19 @@ export function updateCombat(world: World, dt: number) {
       damageEnemy(world, target, def.damage * dt, def.armorPierce);
     } else if (tower.cooldown <= 0) {
       tower.cooldown = 1 / def.fireRate;
-      if (def.kind === 'projectile') {
+      if (def.kind === 'projectile' || def.kind === 'missile') {
+        const speed = def.projectileSpeed ?? 8;
         world.projectiles.push({
           id: world.nextEntityId(),
+          kind: def.kind,
           x: tower.x,
           y: tower.y,
           targetId: target.id,
           tx: target.x,
           ty: target.y,
-          speed: def.projectileSpeed ?? 8,
+          speed,
+          acceleration: def.projectileAcceleration ?? 0,
+          maxSpeed: def.projectileMaxSpeed ?? speed,
           damage: def.damage,
           splash: def.splash ?? 0,
           pierce: def.armorPierce,

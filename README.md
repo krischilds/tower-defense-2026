@@ -17,11 +17,14 @@ Open the local URL printed by Vite in a WebGPU-compatible browser.
 
 The game starts paused so you can place towers before the first wave. Build on available tiles, defend the core from incoming enemies, and use credits from kills and cleared waves to build and upgrade your defenses. Towers cannot be placed if they block every route to the objective. Click a placed tower to inspect it, change its target priority, upgrade it, or sell it.
 
+Use the speed controls to play at ¼×, ½×, 1×, 2×, or 4× speed.
+
 Each tower has one two-step upgrade chain:
 
 - **Cannon — Siege:** improves splash and range, then increases splash and damage.
 - **Laser — Lance:** improves range and armor penetration, then extends range and fully penetrates armor.
 - **Tesla — Storm:** increases chain coverage, then adds more jumps and reduces damage falloff.
+- **Missile — Warhead:** increases damage and range, then adds damage and armor penetration.
 
 The base tower is Level 1. Its first upgrade is Level 2; Level 3 is available only after Level 2 is purchased.
 
@@ -33,7 +36,7 @@ The base tower is Level 1. Its first upgrade is Level 2; Level 3 is available on
 | Rotate camera | Right-drag or Q/E |
 | Third-person view preset | 3rd button beside the rotation controls |
 | Zoom | Mouse wheel or pinch |
-| Select a tower to build | 1–3 |
+| Select a tower to build | 1–4 |
 | Cancel placement / selection | Escape |
 | Sell selected tower | X or Delete |
 | Toggle enemy route display | P |
@@ -51,4 +54,6 @@ npm run build     # Type-check and create a production build
 npm run preview   # Preview the production build
 ```
 
-The simulation rules are kept separate from rendering and the UI. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for implementation details.
+The simulation rules are kept separate from rendering and the UI. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for implementation details and planned milestones, including local API and database development.
+
+For GitHub Pages deployment, see the [workflow README](.github/workflows/README.md).

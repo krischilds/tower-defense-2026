@@ -28,6 +28,15 @@ describe('GameLoop', () => {
     expect(b.time).toBeCloseTo(0.2, 1);
   });
 
+  it.each([0.25, 0.5])('advances at %sx speed over multiple frames', (speed) => {
+    const sim = counter();
+    const loop = new GameLoop(sim);
+    loop.paused = false;
+    loop.speed = speed;
+    for (let frame = 0; frame < 120; frame++) loop.advance(1 / 60);
+    expect(sim.time).toBeCloseTo(2 * speed, 5);
+  });
+
   it('bounds catch-up after a long frame', () => {
     const s = counter();
     const l = new GameLoop(s);
