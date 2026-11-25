@@ -28,7 +28,7 @@ pinch zoom + twist rotate, tap selects. Keyboard: WASD/arrows pan, Q/E rotate.
 `npm run dev`, `npm run build` (type-check + bundle), `npm test`.
 
 ## Deployment
-Set the repository's Pages source to **GitHub Actions** in Settings → Pages. Pushes to `master` and manual workflow runs on `master` test, build, and deploy the game to GitHub Pages; pull requests to `master` test and build without deploying. The deployment build uses relative asset paths so it works under the repository's Pages URL.
+Set the repository's Pages source to **GitHub Actions** in Settings → Pages. Pushes to `master` test and build without deploying; pushes to branches beginning with `release` test, build, and deploy to GitHub Pages. Pull requests targeting either test and build without deploying. Manual runs deploy only from release branches. The deployment build uses relative asset paths so it works under the repository's Pages URL.
 
 ## Pathfinding & placement (Milestone 2)
 - `sim/pathfinding.ts`: Dijkstra distance field from the objective (8-directional, no diagonal corner cutting). One `FlowField` serves every enemy (step to lowest-distance neighbour), so recomputing it reroutes all enemies. Distances use Float64 - Float32 rounding corrupts Dijkstra's stale-entry check.
@@ -54,7 +54,7 @@ Set the repository's Pages source to **GitHub Actions** in Settings → Pages. P
 - `data/waves.ts`: data-driven `WaveDef`s (spawn groups with count/interval/delay, clear `bonus`, `healthMult`, `boss`). 12 waves; boss waves at 6 and 12. Timing knobs (`FIRST_WAVE_DELAY`, `WAVE_DELAY`) are in `data/balance.ts`.
 - `sim/waves.ts`: `WaveController` (countdown → active → countdown/done). `World.update` feeds it; a wave completes when its queue is empty and no enemies remain, which pays the bonus. Clearing the last wave sets `status = 'victory'`. `world.callNextWave()` skips the countdown.
 - New enemies: armored, swarm, boss (data + renderer shapes).
-- UI: wave counter, countdown with "Send now" (N), clear toast, victory overlay.
+- UI: wave counter, visible countdown with a remaining-time bar and "Send now" (N), clear toast, victory overlay. The countdown remains visible while paused.
 
 ## Milestone 6: tower upgrades
 - `data/towers.ts` defines one two-level upgrade path per tower: Siege for Cannon, Lance for Laser, Storm for Tesla, and Warhead for Missile. `getEffectiveTowerDef` combines base stats with the purchased levels.

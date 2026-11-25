@@ -7,7 +7,7 @@ import { World, type PlaceResult, type TargetPriority, type UpgradeResult } from
 import { PRIORITIES } from '../sim/types';
 import { MAPS } from '../data/maps';
 import { STARTING_CREDITS, TOWERS, getEffectiveTowerDef, getTowerDef, getUpgradeBranches } from '../data/towers';
-import { SPEED_OPTIONS } from '../data/balance';
+import { FIRST_WAVE_DELAY, SPEED_OPTIONS, WAVE_DELAY } from '../data/balance';
 import { GameLoop } from '../core/gameLoop';
 import { WebGPUUnavailableError } from '../render/webgpu';
 
@@ -25,6 +25,9 @@ store.currency = world.credits;
 store.totalWaves = world.waves.total;
 store.objectiveMax = world.coreMax;
 store.objectiveHealth = world.coreHealth;
+store.countdown = world.waves.countdown;
+
+const countdownDuration = computed(() => store.wave === 0 ? FIRST_WAVE_DELAY : WAVE_DELAY);
 
 const REASONS: Record<Extract<PlaceResult, { ok: false }>['reason'], string> = {
   'out-of-bounds': 'Outside the battlefield',
@@ -43,7 +46,7 @@ function onFrame(dt: number) {
   const wc = world.waves;
   if (store.wave !== wc.started) store.wave = wc.started;
   if (store.wavePhase !== wc.phase) store.wavePhase = wc.phase;
-  const cd = Math.max(0, Math.ceil(wc.countdown));
+  const cd = Math.max(0, wc.countdown);
   if (store.countdown !== cd) store.countdown = cd;
   if (store.lastBonus !== wc.lastBonus) {
     store.lastBonus = wc.lastBonus;
@@ -80,6 +83,8 @@ function restart() {
   store.victory = false;
   store.lastBonus = 0;
   store.wave = 0;
+  store.wavePhase = world.waves.phase;
+  store.countdown = world.waves.countdown;
   game?.setSelected(null);
   syncStore();
   store.objectiveHealth = world.coreHealth;
@@ -280,12 +285,21 @@ onBeforeUnmount(() => {
         <button v-for="s in SPEED_OPTIONS" :key="s" :class="{ active: store.speed === s }" :aria-pressed="store.speed === s" @click="setSpeed(s)">{{ s === 0.25 ? '¼' : s === 0.5 ? '½' : s }}×</button>
       </div>
 
-      <div v-if="store.wavePhase === 'countdown' && !store.paused && !store.defeated && !store.victory" class="wavebar">
-        {{ store.wave === 0 ? 'First wave' : 'Wave ' + (store.wave + 1) }} in {{ store.countdown }}s
-        <button @click="world.callNextWave()">Send now (N)</button>
+      <div v-if="store.wavePhase === 'countdown' && !store.defeated && !store.victory" class="wavebar">
+        <div class="wave-countdown" role="timer" :aria-label="`Wave ${store.wave + 1} countdown`">
+          <span>Wave {{ store.wave + 1 }} starts in</span>
+          <strong>{{ Math.ceil(store.countdown) }}<small>s</small></strong>
+        </div>
+        <div class="countdown-track" role="progressbar" aria-label="Time remaining before next wave"
+          :aria-valuemin="0" :aria-valuemax="countdownDuration" :aria-valuenow="Math.ceil(store.countdown)"
+          :aria-valuetext="`${Math.ceil(store.countdown)} seconds remaining`">
+          <div :style="{ width: `${Math.min(100, store.countdown / countdownDuration * 100)}%` }" />
+        </div>
+        <span v-if="store.paused" class="countdown-paused">Paused — press Start to begin</span>
+        <button v-else @click="world.callNextWave()">Send now (N)</button>
       </div>
 
-      <div v-if="store.paused && !store.defeated && !store.victory" class="banner">Paused — build your defences, then press Start or Space</div>
+      <div v-if="store.paused && store.wavePhase !== 'countdown' && !store.defeated && !store.victory" class="banner">Paused — build your defences, then press Start or Space</div>
 
       <div v-if="store.victory" class="overlay victory">
         <h1>Victory!</h1>
@@ -595,15 +609,53 @@ body,
 }
 .wavebar {
   position: absolute;
-  top: 130px;
-  left: 12px;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  box-sizing: border-box;
+  width: 220px;
+  max-width: calc(100% - 24px);
   display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 13px;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 12px;
+  border: 1px solid #1f8fff88;
+  border-radius: 8px;
+  background: rgba(10, 20, 40, 0.9);
   color: #9fe8ff;
 }
+.wave-countdown {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+}
+.wave-countdown strong {
+  color: #fff;
+  font-size: 26px;
+  line-height: 1;
+}
+.wave-countdown small {
+  margin-left: 2px;
+  font-size: 13px;
+}
+.countdown-track {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: #1b2c44;
+}
+.countdown-track div {
+  height: 100%;
+  background: #4dd2ff;
+}
+.countdown-paused {
+  font-size: 12px;
+  color: #ffd34d;
+}
 .wavebar button {
+  align-self: flex-end;
   padding: 4px 10px;
   color: #cfe6ff;
   background: rgba(10, 20, 40, 0.8);

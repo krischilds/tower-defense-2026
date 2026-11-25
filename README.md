@@ -18,6 +18,7 @@ Open the local URL printed by Vite in a WebGPU-compatible browser.
 The game starts paused so you can place towers before the first wave. Build on available tiles, defend the core from incoming enemies, and use credits from kills and cleared waves to build and upgrade your defenses. Towers cannot be placed if they block every route to the objective. Click a placed tower to inspect it, change its target priority, upgrade it, or sell it.
 
 Use the speed controls to play at ¼×, ½×, 1×, 2×, or 4× speed.
+The wave countdown shows the time remaining before enemies arrive; it pauses with the game and can be skipped with **Send now** or N.
 
 Each tower has one two-step upgrade chain:
 
