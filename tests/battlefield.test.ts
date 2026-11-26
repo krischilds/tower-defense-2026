@@ -2,6 +2,8 @@ import { describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three/webgpu';
 import { Battlefield } from '../src/render/battlefield';
 import { Grid } from '../src/sim/grid';
+import { World } from '../src/sim/world';
+import { updateCombat } from '../src/sim/combat';
 
 describe('tower placement preview', () => {
   it('reuses the preview when moving and rebuilds it when validity changes', () => {
@@ -26,5 +28,26 @@ describe('tower placement preview', () => {
     expect(dispose).toHaveBeenCalledOnce();
     field.showGhost(null, null, false);
     expect(ghost.visible).toBe(false);
+  });
+
+  describe('projectile tower aiming', () => {
+    it('renders the same gun angle used by the simulation', () => {
+      const grid = Grid.fromMap({ id: 't', name: 't', rows: ['S...O', '.....', '.....'] });
+      const world = new World(grid, 1000);
+      world.placeTower('cannon', 2, 1);
+      world.spawnEnemy('basic', { x: 2, y: 0 });
+      const tower = world.towerAt(2, 1)!;
+      const field = new Battlefield(grid);
+      field.syncTowers([tower]);
+      updateCombat(world, 0.1);
+      field.aimTowers([tower], 0.1);
+      let head: THREE.Object3D | undefined;
+      field.group.traverse((object) => {
+        if (object.userData.head instanceof THREE.Object3D) head = object.userData.head;
+      });
+      if (!head) throw new Error('Expected a tower head');
+      expect(head.rotation.y).toBeCloseTo(tower.aim);
+      expect(world.projectiles).toHaveLength(0);
+    });
   });
 });

@@ -20,21 +20,24 @@ export class EffectsRenderer {
   private bolts: Bolt[] = [];
   private mats = new Map<number, THREE.MeshBasicMaterial>();
   private shellMats = new Map<number, THREE.MeshStandardMaterial>();
+  private missileMats = new Map<number, THREE.MeshBasicMaterial>();
   private unitCyl = new THREE.CylinderGeometry(1, 1, 1, 12);
   private shell = new THREE.LatheGeometry([
     new THREE.Vector2(0, -0.17),
-    new THREE.Vector2(0.075, -0.17),
-    new THREE.Vector2(0.085, -0.15),
-    new THREE.Vector2(0.085, 0.04),
-    new THREE.Vector2(0.08, 0.09),
-    new THREE.Vector2(0.06, 0.15),
-    new THREE.Vector2(0.035, 0.2),
+    new THREE.Vector2(0.045, -0.17),
+    new THREE.Vector2(0.05, -0.15),
+    new THREE.Vector2(0.05, 0.04),
+    new THREE.Vector2(0.047, 0.09),
+    new THREE.Vector2(0.035, 0.15),
+    new THREE.Vector2(0.02, 0.2),
     new THREE.Vector2(0, 0.23),
   ], 16);
   private missileBody = new THREE.CylinderGeometry(0.08, 0.08, 0.3, 16);
   private missileNose = new THREE.ConeGeometry(0.08, 0.17, 16);
   private missileFin: THREE.ExtrudeGeometry;
-  private missileBodyMaterial = new THREE.MeshStandardMaterial({ color: 0xaab4bc, metalness: 0.6, roughness: 0.45 });
+  private missileBodyMaterial = new THREE.MeshStandardMaterial({
+    color: 0xaab4bc, metalness: 0.6, roughness: 0.45, transparent: true, depthTest: false, depthWrite: false,
+  });
   private smokeDistance = new Map<number, number>();
 
   private particles: THREE.InstancedMesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>;
@@ -117,6 +120,7 @@ export class EffectsRenderer {
   dispose() {
     this.shell.dispose();
     this.shellMats.forEach((material) => material.dispose());
+    this.missileMats.forEach((material) => material.dispose());
     this.missileBody.dispose();
     this.missileNose.dispose();
     this.missileFin.dispose();
@@ -140,7 +144,7 @@ export class EffectsRenderer {
   private shellMaterial(color: number) {
     let m = this.shellMats.get(color);
     if (!m) {
-      m = new THREE.MeshStandardMaterial({ color, metalness: 0.6, roughness: 0.4 });
+      m = new THREE.MeshStandardMaterial({ color, metalness: 0.6, roughness: 0.4, transparent: true, depthTest: false, depthWrite: false });
       this.shellMats.set(color, m);
     }
     return m;
@@ -154,7 +158,7 @@ export class EffectsRenderer {
         break;
       }
       case 'hit': {
-        const p = this.toWorld(ev.x, ev.y, 0.45);
+        const p = this.toWorld(ev.x, ev.y, ev.blocked ? 1 : 0.45);
         this.burst(p, ev.color, ev.big ? 22 : 8, ev.big ? 3.5 : 2, ev.big ? 0.09 : 0.06);
         break;
       }
@@ -211,7 +215,11 @@ export class EffectsRenderer {
   private makeMissile(color: number): THREE.Group {
     const missile = new THREE.Group();
     missile.name = 'missile';
-    const accent = this.material(color);
+    let accent = this.missileMats.get(color);
+    if (!accent) {
+      accent = new THREE.MeshBasicMaterial({ color, transparent: true, depthTest: false, depthWrite: false });
+      this.missileMats.set(color, accent);
+    }
     const body = new THREE.Mesh(this.missileBody, this.missileBodyMaterial);
     const nose = new THREE.Mesh(this.missileNose, accent);
     nose.position.y = 0.235;
@@ -231,11 +239,14 @@ export class EffectsRenderer {
       let m = this.projectiles.get(p.id);
       if (!m) {
         m = p.kind === 'missile' ? this.makeMissile(p.color) : new THREE.Mesh(this.shell, this.shellMaterial(p.color));
+        m.traverse((object) => {
+          if (object instanceof THREE.Mesh) object.renderOrder = 100;
+        });
         this.projectiles.set(p.id, m);
         this.group.add(m);
       }
       m.position.copy(this.toWorld(p.x, p.y, 0.8));
-      this.tmpV.set(p.tx - p.x, 0, p.ty - p.y).normalize();
+      this.tmpV.set(p.dx, 0, p.dy).normalize();
       if (this.tmpV.lengthSq() > 0) m.quaternion.setFromUnitVectors(UP, this.tmpV);
     }
     for (const [id, m] of this.projectiles) {

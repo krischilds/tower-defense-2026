@@ -20,12 +20,14 @@ The game starts paused so you can place towers before the first wave. Build on a
 Use the speed controls to play at ¼×, ½×, 1×, 2×, or 4× speed.
 The wave countdown shows the time remaining before enemies arrive; it pauses with the game and can be skipped with **Send now** or N.
 
+Cannon and missile towers turn toward their targets before firing. Their shots lead moving targets but can miss; missiles from upgraded towers can make one wide turn back toward their original target after a miss. Projectiles explode on blocked tiles, dealing their usual splash damage at the impact point.
+
 Each tower has one two-step upgrade chain:
 
 - **Cannon — Siege:** improves splash and range, then increases splash and damage.
 - **Laser — Lance:** improves range and armor penetration, then extends range and fully penetrates armor.
 - **Tesla — Storm:** increases chain coverage, then adds more jumps and reduces damage falloff.
-- **Missile — Warhead:** increases damage and range, then adds damage and armor penetration.
+- **Missile — Warhead:** increases damage and range and adds a one-time return maneuver, then adds damage and armor penetration.
 
 The base tower is Level 1. Its first upgrade is Level 2; Level 3 is available only after Level 2 is purchased.
 

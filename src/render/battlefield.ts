@@ -120,12 +120,17 @@ export class Battlefield {
     }
   }
 
-  /** Smoothly turns tower heads towards their aim angle. */
+  /** Synchronizes projectile heads and smoothly turns the other tower heads. */
   aimTowers(towers: readonly PlacedTower[], dt: number) {
     const k = 1 - Math.exp(-14 * dt);
     for (const t of towers) {
       const head = this.heads.get(t.id);
       if (!head) continue;
+      const kind = getEffectiveTowerDef(t).kind;
+      if (kind === 'projectile' || kind === 'missile') {
+        head.rotation.y = t.aim;
+        continue;
+      }
       let d = t.aim - head.rotation.y;
       d = Math.atan2(Math.sin(d), Math.cos(d));
       head.rotation.y += d * k;

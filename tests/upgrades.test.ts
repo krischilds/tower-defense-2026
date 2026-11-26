@@ -70,7 +70,7 @@ describe('tower upgrades', () => {
     w.placeTower('cannon', 5, 1);
     expect(w.upgradeTower(5, 1, 'siege').ok).toBe(true);
     w.spawnEnemy('tank', { x: 5, y: 0 });
-    w.update(1 / 60);
+    for (let i = 0; i < 60 && w.projectiles.length === 0; i++) w.update(1 / 60);
     expect(w.projectiles[0]).toMatchObject({ damage: 25, splash: 1.4, pierce: 0.5 });
   });
 
@@ -89,7 +89,7 @@ describe('tower upgrades', () => {
     expect(w.upgradeTower(5, 1, 'warhead').ok).toBe(true);
     expect(w.upgradeTower(5, 1, 'warhead').ok).toBe(true);
     w.spawnEnemy('tank', { x: 5, y: 0 });
-    w.update(1 / 60);
+    for (let i = 0; i < 60 && w.projectiles.length === 0; i++) w.update(1 / 60);
     expect(w.projectiles[0]).toMatchObject({ kind: 'missile', damage: 100, splash: 2, pierce: 0.75 });
   });
 

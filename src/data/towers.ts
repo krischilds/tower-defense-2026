@@ -97,7 +97,7 @@ export const TOWER_UPGRADES: Record<string, UpgradeBranch[]> = {
   ],
   missile: [
     { id: 'warhead', name: 'Warhead', color: 0xff844d, levels: [
-      { cost: 110, description: 'Stronger warheads and longer range.', stats: { damage: 75, range: 5 } },
+      { cost: 110, description: 'Stronger warheads, longer range, and one return pass after a miss.', stats: { damage: 75, range: 5 } },
       { cost: 180, description: 'More devastating warheads with improved armor penetration.', stats: { damage: 100, armorPierce: 0.75 } },
     ] },
   ],

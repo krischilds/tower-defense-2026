@@ -40,15 +40,13 @@ export interface Enemy {
   lastHit: number;
 }
 
-export interface Projectile {
+interface ProjectileBase {
   id: number;
-  kind: 'projectile' | 'missile';
   x: number;
   y: number;
-  targetId: number;
-  /** Last known target position; the shell keeps flying here if the target dies. */
-  tx: number;
-  ty: number;
+  /** Current ground-plane travel direction. */
+  dx: number;
+  dy: number;
   speed: number;
   acceleration: number;
   maxSpeed: number;
@@ -58,10 +56,22 @@ export interface Projectile {
   color: number;
 }
 
+export type Projectile = ProjectileBase & (
+  | { kind: 'projectile' }
+  | {
+    kind: 'missile';
+    targetId: number;
+    canReturn: boolean;
+    phase: 'initial' | 'turning' | 'returning';
+    turnDirection: -1 | 0 | 1;
+    turnAmount: number;
+  }
+);
+
 /** One-shot notifications for the renderer; drained each frame. */
 export type GameEvent =
   | { type: 'shot'; x: number; y: number; color: number }
-  | { type: 'hit'; x: number; y: number; color: number; big: boolean }
+  | { type: 'hit'; x: number; y: number; color: number; big: boolean; blocked?: boolean }
   | { type: 'death'; x: number; y: number; color: number }
   | { type: 'missileTrail'; id: number; from: Point; to: Point }
   | { type: 'chain'; points: Point[]; color: number };

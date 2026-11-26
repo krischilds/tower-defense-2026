@@ -6,10 +6,33 @@ import { updateCombat } from '../src/sim/combat';
 import { World } from '../src/sim/world';
 
 describe('cannon projectiles', () => {
-  it('points the bullet-shaped shell toward its target until impact', () => {
+  it('renders blocked-tile impact bursts above the tile', () => {
+    const world = new World(Grid.fromMap({ id: 't', name: 't', rows: ['S#O', '...'] }), 1000);
+    const heights: number[] = [];
+    const effects = new EffectsRenderer((x, y, h) => {
+      heights.push(h);
+      return new THREE.Vector3(x, h, y);
+    }, () => new THREE.Vector3());
+    world.events.push({ type: 'hit', x: 0.5, y: 0, color: 0xffa84d, big: true, blocked: true });
+    effects.update(world, 0, new THREE.PerspectiveCamera());
+    expect(heights).toContain(1);
+    const sparks = effects.group.children.find(
+      (child) => child instanceof THREE.InstancedMesh
+        && child.material instanceof THREE.MeshBasicMaterial
+        && child.material.blending === THREE.AdditiveBlending,
+    );
+    if (!(sparks instanceof THREE.InstancedMesh)) throw new Error('Expected spark particles');
+    const matrix = new THREE.Matrix4();
+    sparks.getMatrixAt(0, matrix);
+    expect(new THREE.Vector3().setFromMatrixScale(matrix).x).toBeGreaterThan(0);
+    effects.dispose();
+  });
+
+  it('keeps the firing direction when the target moves', () => {
     const world = new World(Grid.fromMap({ id: 't', name: 't', rows: ['S.........O', '...........'] }), 1000);
     world.placeTower('cannon', 6, 1);
     world.spawnEnemy('basic', { x: 9, y: 0 });
+    world.towerAt(6, 1)!.aim = Math.atan2(3, -1);
     const effects = new EffectsRenderer((x, y, h) => new THREE.Vector3(x, h, y), () => new THREE.Vector3());
     const camera = new THREE.PerspectiveCamera();
 
@@ -19,28 +42,34 @@ describe('cannon projectiles', () => {
       (child) => child instanceof THREE.Mesh && child.geometry instanceof THREE.LatheGeometry,
     );
     if (!shell) throw new Error('Expected a visible cannon shell');
+    if (!(shell instanceof THREE.Mesh) || Array.isArray(shell.material)) throw new Error('Expected a shell mesh');
+    expect(shell.material.depthTest).toBe(false);
+    expect(shell.material.depthWrite).toBe(false);
+    expect(shell.material.transparent).toBe(true);
+    expect(shell.renderOrder).toBeGreaterThan(21);
     const projectile = world.projectiles[0];
     const forward = () => new THREE.Vector3(0, 1, 0).applyQuaternion(shell.quaternion);
-    const expected = new THREE.Vector3(projectile.tx - projectile.x, 0, projectile.ty - projectile.y).normalize();
+    const expected = new THREE.Vector3(projectile.dx, 0, projectile.dy).normalize();
     expect(forward().distanceTo(expected)).toBeLessThan(0.00001);
 
-    projectile.tx = projectile.x;
-    projectile.ty = projectile.y + 1;
+    world.enemies[0].y = 2;
     effects.update(world, 0.01, camera);
-    expect(forward().distanceTo(new THREE.Vector3(0, 0, 1))).toBeLessThan(0.00001);
+    expect(forward().distanceTo(expected)).toBeLessThan(0.00001);
 
-    updateCombat(world, 0.5);
+    updateCombat(world, 1);
     effects.update(world, 0.01, camera);
     expect(effects.group.children).not.toContain(shell);
+    expect(world.enemies[0].health).toBe(world.enemies[0].maxHealth);
     effects.dispose();
   });
 });
 
 describe('missile smoke', () => {
-  it('points the missile nose toward its target and removes it on impact', () => {
+  it('keeps its firing direction and removes a missed missile at the grid edge', () => {
     const world = new World(Grid.fromMap({ id: 't', name: 't', rows: ['S.........O', '...........'] }), 1000);
     world.placeTower('missile', 5, 1);
     world.spawnEnemy('basic', { x: 9, y: 0 });
+    world.towerAt(5, 1)!.aim = Math.atan2(4, -1);
     const effects = new EffectsRenderer((x, y, h) => new THREE.Vector3(x, h, y), () => new THREE.Vector3());
     const camera = new THREE.PerspectiveCamera();
 
@@ -50,16 +79,23 @@ describe('missile smoke', () => {
     if (!missile) throw new Error('Expected a visible missile');
     const nose = missile.children.find((child) => child instanceof THREE.Mesh && child.geometry instanceof THREE.ConeGeometry);
     expect(nose?.position.y).toBeGreaterThan(0);
+    for (const part of missile.children) {
+      if (!(part instanceof THREE.Mesh) || Array.isArray(part.material)) throw new Error('Expected a missile mesh');
+      expect(part.material.depthTest).toBe(false);
+      expect(part.material.depthWrite).toBe(false);
+      expect(part.material.transparent).toBe(true);
+      expect(part.renderOrder).toBeGreaterThan(21);
+    }
     const projectile = world.projectiles[0];
-    const expected = new THREE.Vector3(projectile.tx - projectile.x, 0, projectile.ty - projectile.y).normalize();
+    const expected = new THREE.Vector3(projectile.dx, 0, projectile.dy).normalize();
     expect(new THREE.Vector3(0, 1, 0).applyQuaternion(missile.quaternion).distanceTo(expected)).toBeLessThan(0.00001);
 
-    projectile.tx = projectile.x;
-    projectile.ty = projectile.y + 1;
+    world.enemies[0].y = 2;
     effects.update(world, 0.01, camera);
-    expect(new THREE.Vector3(0, 1, 0).applyQuaternion(missile.quaternion).distanceTo(new THREE.Vector3(0, 0, 1))).toBeLessThan(0.00001);
+    expect(new THREE.Vector3(0, 1, 0).applyQuaternion(missile.quaternion).distanceTo(expected)).toBeLessThan(0.00001);
 
-    updateCombat(world, 0.5);
+    world.enemies = [];
+    updateCombat(world, 0.8);
     effects.update(world, 0.01, camera);
     expect(effects.group.getObjectByName('missile')).toBeUndefined();
     effects.dispose();
@@ -69,6 +105,7 @@ describe('missile smoke', () => {
     const w = new World(Grid.fromMap({ id: 't', name: 't', rows: ['S.........O', '...........'] }), 1000);
     w.placeTower('missile', 5, 1);
     w.spawnEnemy('basic', { x: 9, y: 0 });
+    w.towerAt(5, 1)!.aim = Math.atan2(4, -1);
     const effects = new EffectsRenderer((x, y, h) => new THREE.Vector3(x, h, y), () => new THREE.Vector3());
     const camera = new THREE.PerspectiveCamera();
     camera.rotation.set(-0.5, 0.3, 0);
