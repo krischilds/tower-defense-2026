@@ -6,6 +6,15 @@ on:
   pull_request:
     branches: [master, 'release*', 'release*/**']
   workflow_dispatch:
+    inputs:
+      environment:
+        description: Choose the target; prod deployment is not configured yet
+        required: true
+        type: choice
+        options:
+          - dev
+          - prod
+        default: dev
 
 permissions:
   contents: read
@@ -27,7 +36,12 @@ jobs:
           path: dist
 
   deploy:
-    if: github.event_name != 'pull_request' && startsWith(github.ref, 'refs/heads/release')
+    if: >-
+      github.event_name != 'pull_request' &&
+      (
+        (github.event_name == 'push' && github.ref == 'refs/heads/master') ||
+        (github.event_name == 'workflow_dispatch' && inputs.environment == 'dev')
+      )
     needs: build
     runs-on: ubuntu-latest
     permissions:
@@ -37,14 +51,8 @@ jobs:
       group: pages
       cancel-in-progress: false
     environment:
-      name: github-pages
+      name: dev
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Verify release branch
-        run: |
-          case "$GITHUB_REF" in
-            refs/heads/release*) ;;
-            *) echo "Deployment requires a branch beginning with release" >&2; exit 1 ;;
-          esac
       - id: deployment
         uses: actions/deploy-pages@v4

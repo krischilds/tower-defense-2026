@@ -28,7 +28,7 @@ pinch zoom + twist rotate, tap selects. Keyboard: WASD/arrows pan, Q/E rotate.
 `npm run dev`, `npm run build` (type-check + bundle), `npm test`.
 
 ## Deployment
-Set the repository's Pages source to **GitHub Actions** in Settings → Pages. Pushes to `master` test and build without deploying; pushes to branches beginning with `release` test, build, and deploy to GitHub Pages. Pull requests targeting either test and build without deploying. Manual runs deploy only from release branches. The deployment build uses relative asset paths so it works under the repository's Pages URL.
+Set the repository's Pages source to **GitHub Actions** in Settings → Pages. Pushes to `master` test, build, and deploy to GitHub Pages using `dev`; pushes to branches beginning with `release` test and build without deploying. Manual runs can select `dev` from any branch, with `dev` as the default. Selecting `prod` currently does not deploy because AWS is not configured; add an AWS deployment job using the `prod` environment when ready. Pull requests targeting either track test and build without deploying. The deployment build uses relative asset paths so it works under the repository's Pages URL.
 
 ## Pathfinding & placement (Milestone 2)
 - `sim/pathfinding.ts`: Dijkstra distance field from the objective (8-directional, no diagonal corner cutting). One `FlowField` serves every enemy (step to lowest-distance neighbour), so recomputing it reroutes all enemies. Distances use Float64 - Float32 rounding corrupts Dijkstra's stale-entry check.
