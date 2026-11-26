@@ -385,7 +385,7 @@ onBeforeUnmount(() => {
       <div class="controls">
         <button title="Rotate left (Q)" @click="game?.rotate(-Math.PI / 4)">⟲</button>
         <button title="Rotate right (E)" @click="game?.rotate(Math.PI / 4)">⟳</button>
-        <button class="view-preset" title="Third-person view" aria-label="Third-person view" @click="game?.thirdPersonView()">3rd</button>
+        <button class="view-preset active" title="Top-down view" aria-label="Top-down view" aria-pressed="true" @click="game?.topDownView()">Top-down</button>
         <button title="Zoom in" @click="game?.zoom(0.8)">＋</button>
         <button title="Zoom out" @click="game?.zoom(1.25)">－</button>
       </div>
@@ -822,7 +822,13 @@ body,
   background: rgba(31, 143, 255, 0.3);
 }
 .controls .view-preset {
+  width: auto;
+  min-width: 76px;
   font-size: 14px;
+}
+.controls .view-preset.active {
+  border-color: #ffd34d;
+  background: rgba(255, 211, 77, 0.18);
 }
 .status {
   position: absolute;

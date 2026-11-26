@@ -8,9 +8,9 @@ const PRESET_DURATION = 0.8;
 /** Orbit-style RTS camera: yaw/pitch/distance around a pan target on the ground plane. */
 export class CameraController {
   target = new THREE.Vector3();
-  yaw = Math.PI / 4;
-  pitch = THREE.MathUtils.degToRad(48);
-  distance = 30;
+  yaw = PRESET_YAW;
+  pitch = PRESET_PITCH;
+  distance = PRESET_DISTANCE;
 
   minDistance = 8;
   maxDistance = 45;
@@ -61,7 +61,7 @@ export class CameraController {
     this.pitch = THREE.MathUtils.clamp(this.pitch + dPitch, this.minPitch, this.maxPitch);
   }
 
-  thirdPersonView() {
+  topDownView() {
     const yawDelta = PRESET_YAW - this.yaw;
     this.transition = {
       target: this.target.clone(),

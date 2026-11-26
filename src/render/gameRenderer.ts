@@ -74,8 +74,8 @@ export class GameRenderer {
   rotate(dYaw: number) {
     this.controls.rotate(dYaw);
   }
-  thirdPersonView() {
-    this.controls?.thirdPersonView();
+  topDownView() {
+    this.controls?.topDownView();
   }
   zoom(f: number) {
     this.controls.zoom(f);
